@@ -1,0 +1,62 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8"/>
+    <meta http-equiv="Content-Type" content="text/html"/>
+</head>
+<body>
+<!--navbar: replace system frame -->
+<div class="navbar-total">
+    <ul class="nav navbar-nav navbar-drag">
+        <li style="padding: 10px;"><img src="${require('./../src/renderer/assets/logo.ico')}" width="" height="30px"/></li>
+    </ul>
+    <ul class="nav navbar-nav pull-right navbar-action">
+        <li id="conf-btn"><a href="javascript:void(0)"><span class="glyphicon glyphicon-cog"></span></a></li>
+        <li id="hide-btn"><a href="javascript:void(0)"><span class="glyphicon glyphicon-minus-sign"></span></a></li>
+        <li id="max-min-btn"><a href="javascript:void(0)"><span class="glyphicon glyphicon-plus-sign"></span></a></li>
+        <li id="close-btn"><a href="javascript:void(0)"><span class="glyphicon glyphicon-remove-sign"></span></a></li>
+    </ul>
+</div>
+<!--navbar: replace system frame -->
+
+<!--<iframe id="main-context" frameborder="0" z-index="1" style="margin-top: 0;"></iframe>-->
+<webview id="app"></webview>
+
+<!--setting model-->
+<div id="settingModal" class="modal fade" tabindex="-2" role="dialog"
+     aria-labelledby="settingModalLabel"
+     aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+                    &times;
+                </button>
+                <h4 class="modal-title" id="settingModalLabel">
+                    服务设置
+                </h4>
+            </div>
+            <div class="modal-body row">
+                <div class="col-md-12" id="conf-params">
+                    <div class="form-group">
+                        <label class="label label-info server-label">服务地址：</label>
+                        <input type="text" id="server" name="server" value="" size="40"/>
+                        <br/>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="text-align: center;">
+                <button type="button" class="btn btn-default" data-dismiss="modal">
+                    关闭
+                </button>
+                <button type="button" class="btn btn-primary" onclick="saveSetting()">
+                    提交
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+<!--settting model-->
+</body>
+</html>

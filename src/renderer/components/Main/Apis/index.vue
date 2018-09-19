@@ -1,0 +1,12 @@
+<template>
+    <div>
+        <el-container>
+            <el-header>
+                <el-tag>API测试</el-tag>
+            </el-header>
+            <el-main>
+                <router-view></router-view>
+            </el-main>
+        </el-container>
+    </div>
+</template>
