@@ -1,109 +1,133 @@
 "use strict";
-
 const WebpackDevServer = require('webpack-dev-server')
 const webpack = require('webpack')
 const portFinder = require('portfinder')
-
-const webpackWebConfig = require('./config/webpack.web.config')
-const webpackDevConfig = require('./config/webpack.dev.config')
+const HotMiddleware = require('webpack-hot-middleware')
 const FriendlyErrorsPlugin = require('friendly-errors-webpack-plugin')
-const notifier = require('./notifier')
 const chalk = require('chalk')
-const path =require('path')
+const path = require('path')
 const electron = require('electron')
 const {spawn} = require('child_process')
+const webpackMainConfig = require('./config/webpack.main.config')
+const webpackRendererConfig = require('./config/webpack.renderer.config')
+const webpackDevConfig = require('./config/webpack.dev.config')
+const notification = require('./utils/notification').ServerNotification
+
+function debug(m, color) {
+  console.log(chalk[color](`Hook: ${m}`))
+}
+
 let electronProcess = null
-let manualRestart = false
+let hotMiddleware = null
 
-function resolve(filePath){
-    return path.resolve(__dirname,'..',filePath)
+function startRenderer() {
+  return new Promise(resolve => {
+    webpackRendererConfig.mode = 'production'
+    webpackRendererConfig.plugins.push(new webpack.DefinePlugin({
+      'process.env.NODE_ENV':'"development"'
+    }))
+    WebpackDevServer.addDevServerEntrypoints(webpackRendererConfig, webpackDevConfig);
+
+    webpackRendererConfig.plugins.push(new FriendlyErrorsPlugin({
+        compilationSuccessInfo: {
+          messages: [`Your application is running here: http://${webpackDevConfig.host}:${webpackDevConfig.port}`]
+        },
+        onErrors: (severity, errors) => {
+          if (severity !== 'error') {
+            return;
+          }
+          const error = errors[0];
+          debug(severity + ': ' + error.name, 'red');
+          debug(error.file || '', 'red');
+        },
+        clearConsole: false
+      })
+    )
+    const compiler = webpack(webpackRendererConfig);
+    hotMiddleware = HotMiddleware(compiler, {
+      log: false,
+      heartbeat: 2500
+    })
+
+    const server = new WebpackDevServer(compiler, webpackDevConfig);
+    //编译结果完成,不论成功或者失败
+    compiler.hooks.done.tap('done', stats => {
+      debug('done...', 'blue')
+      resolve()
+    })
+
+    //监听模式下，一个新的编译(compilation)触发之后，执行一个插件，但是是在实际编译开始之前。
+    compiler.hooks.watchRun.tapAsync('watchRun', (compilation, done) => {
+      debug('watchRun...', 'blue')
+      done()
+    })
+
+    server.listen(webpackDevConfig.port, webpackDevConfig.host, () => {
+      debug('dev server listening on port 8080', 'yellow');
+    });
+  })
 }
 
-portFinder.basePort = webpackDevConfig.port
-portFinder.getPort((err, port) => {
-    if (err) {
+function startMain() {
+  return new Promise(resolve =>{
+    webpackMainConfig.plugins.push(new webpack.DefinePlugin({
+      'process.env.NODE_ENV':'"development"'
+    }))
+
+    let compiler = webpack(webpackMainConfig)
+    compiler.hooks.watchRun.tapAsync('watch-run', (compilation, done) => {
+      debug('compiling...','white')
+      done()
+    })
+
+    compiler.hooks.done.tap('done', stats => {
+      debug('done...', 'white')
+    })
+
+    compiler.watch({}, (err, stats) => {
+      if (err) {
         console.log(err)
-    } else {
-        webpackWebConfig.plugins.push(new FriendlyErrorsPlugin({
-                compilationSuccessInfo: {
-                    messages: [`Your application is running here: http://${webpackDevConfig.host}:${port}`]
-                },
-                onErrors: (severity, errors) => {
-                    if (severity !== 'error') {
-                        return;
-                    }
-                    const error = errors[0];
-                    console.log(severity + ': ' + error.name);
-                    console.log(error.file || '');
-                },
-                clearConsole: false
-            })
-        )
+        return
+      }
 
+      if (electronProcess && electronProcess.kill) {
+        process.kill(electronProcess.pid)
+        electronProcess = null
+        startElectron()
+      }
 
-        if (webpackWebConfig.entry.push) { //entry is a Array
-            webpackWebConfig.entry.push('webpack-dev-server', `webpack-dev-server/client?http://${webpackDevConfig.host}:${port}/`)
-        } else { //entry is a Object(No Array)
-            webpackWebConfig.entry['webpack-dev-server'] = `webpack-dev-server/client?http://${webpackDevConfig.host}:${port}/`
-        }
-        // console.dir(webpackWebConfig.entry)
-
-        let server = new WebpackDevServer(webpack(webpackWebConfig), webpackDevConfig)
-
-        server.listen(port, webpackDevConfig.host, () => {
-            ServerNotify(`Server Start [ ${webpackDevConfig.host + ':' + port} ] ! `);
-
-            if(process.env.CIENT){
-                startElectron()
-            }
-        })
-    }
-})
-
-
-function ServerNotify(msg) {
-    notifier({
-        title: 'Server',
-        message: msg,
-        timeout: 5000
+      resolve()
     })
+  })
 }
 
 
-
-/**
- * 开启应用
- */
 function startElectron() {
-    electronProcess = spawn(electron, ['--inspect=5858', `./src/main/main.js`])
+  let args = [
+    '--inspect=5858',
+    path.join(__dirname, '../dist/temp/main.js')
+  ]
 
-    thislog('Electron ProcessId', electronProcess['pid'],'blue')
+  electronProcess = spawn(electron, args)
 
-    electronProcess.stdout.on('data', data => {
-        thislog('electron', data, 'blue')
-    })
-    electronProcess.stderr.on('data', data => {
-        console.log(data.toString())
-    })
+  electronProcess.stdout.on('data', data => {
+    debug(data, 'blue')
+  })
+  electronProcess.stderr.on('data', data => {
+    debug(data, 'red')
+  })
 
-    electronProcess.on('close', () => {
-        if (!manualRestart) process.exit()
-    })
+  electronProcess.on('close', () => {
+    process.exit()
+  })
 }
 
-function thislog(category, data, color) {
-    let log = ''
-    data = data.toString().split(/\r?\n/)
-    data.forEach(line => {
-        log += `  ${line}\n`
-    })
-    if (/[0-9A-z]+/.test(log)) {
-        console.log(
-            chalk[color].bold(`┏ ${category} -------------------`) +
-            '\n\n' +
-            log +
-            chalk[color].bold('┗ ----------------------------') +
-            '\n'
-        )
-    }
+function init(){
+  Promise.all([startRenderer(),startMain()]).then(()=>{
+    startElectron()
+  }).catch(err=>{
+    console.log(err)
+  })
 }
+
+init()

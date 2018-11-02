@@ -2,7 +2,6 @@
  * 窗口配置
  */
 module.exports = {
-  OPEN_DEV_TOOLS: true,
   HIDE_MENU: false,
   WINDOW_CONFIG: {
     TITLE: 'Cloud-App',

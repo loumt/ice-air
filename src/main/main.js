@@ -1,16 +1,9 @@
 'use strict'
-const os = require('os')
-const {app, ipcMain, Menu, BrowserWindow, clipboard} = require('electron')
+const {app, ipcMain, Menu} = require('electron')
 const MainWindow = require('./windows/MainWindow')
 const WindowConstant = require('./constants/WindowConstant')
-const pck = require('./../../package.json')
 const Tray = require('./windows/Tray')
 const MenuTool = require('./tools/MenuTool')
-const MouseTool = require('./tools/MouseTool')
-const MenuItemTool = require('./tools/MenuItemTool')
-const ShellTool = require('./tools/ShellTool')
-const SanlogicRDP = require('./connections/SanlogicRDP')
-const ConnectionPool = require('./connections/ConnectionPool')
 const ConfigTool = require('./tools/ConfigTool')
 const defaultConfig = require('./defaultConfig')
 const UpdateHandler = require('./update/UpdateHandler')
@@ -20,8 +13,6 @@ class AppWindow {
   constructor() {
     this.app = app
     this.ipcMain = ipcMain
-
-    //windows
     this.mainWindow = null
     this.tray = null
   }

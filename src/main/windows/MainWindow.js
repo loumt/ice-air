@@ -1,7 +1,7 @@
 "use strict"
 const electron = require('electron')
+const env = require('./../env')
 const electronLocalShortcut = require('electron-localshortcut')
-const isDev = process.env.NODE_ENV === 'development'
 const {dialog, BrowserWindow} = electron
 const WindowConstant = require('./../constants/WindowConstant')
 const ImageTool = require('../tools/ImageTool')
@@ -9,15 +9,13 @@ const DialogTool = require('../tools/DialogTool')
 const ConfigTool = require('../tools/ConfigTool')
 const ConnectionPool = require('./../connections/ConnectionPool')
 
-console.log(`NODE_ENV : ${process.env.NODE_ENV}`)
-
-let winUrl = isDev ? 'http://localhost:8585' : `file://${__dirname}/desk.html`
-
-if (process.env.TARGET_URL) {
-  winUrl = process.env.TARGET_URL
+const PublicEnv = {
+  devTool:env.DEV_TOOL,
+  isDev: process.env.NODE_ENV === 'development',
+  url: process.env.NODE_ENV === 'development'? 'http://localhost:9080' : `file://${__dirname}/app.html`
 }
 
-console.log(`isDev:${isDev} url:${winUrl}`);
+console.log(`isDev:${PublicEnv.isDev} url:${PublicEnv.url}`);
 console.log('This platform : ' + process.platform);
 
 class MainWindow {
@@ -73,7 +71,6 @@ class MainWindow {
 
   initWindowEvent() {
     this.mainWindow.once('ready-to-show', () => {
-      this.setFullScreen(ConfigTool.get(ConfigTool.KEY_CUSTOMER_WINDOW_FULLSCREEN) || true)
       this.show()
     })
     this.mainWindow.on('close', (e) => {
@@ -136,12 +133,14 @@ class MainWindow {
   }
 
   load() {
-    this.mainWindow.loadURL(winUrl)
+    this.mainWindow.loadURL(PublicEnv.url)
   }
 
   initWindowContent() {
-    if (isDev || WindowConstant.OPEN_DEV_TOOLS)
+    if (PublicEnv.isDev || PublicEnv.devTool){
       this.openDevTools()
+    }
+
     this.load()
     this.initWebContentEvent()
   }
