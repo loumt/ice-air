@@ -1,4 +1,6 @@
-module.exports = {
-  // props: [ 'DEV_TOOL' ]
-  CONFIG_FILE : 'config.js'
+
+
+export default {
+  CONFIG_DEV_FILE : 'D:\\cloudapp-setting.json',
+  CONFIG_FILE : 'cloudapp-setting.json'
 }

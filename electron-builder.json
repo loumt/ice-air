@@ -1,0 +1,42 @@
+{
+  "appId": "com.looty.iceair",
+  "productName": "IceAir",
+  "copyright": "Copyright © 2018 Lty",
+  "directories": {
+    "output": "dist/builder"
+  },
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": [
+          "x64",
+          "ia32"
+        ]
+      }
+    ],
+    "asar": false,
+    "icon": "build/icon/logo-256.ico"
+  },
+  "nsis": {
+    "oneClick": false,
+    "perMachine": true,
+    "allowToChangeInstallationDirectory": true,
+    "installerHeaderIcon": "build/icon/logo-256.ico",
+    "installerIcon": "build/icon/logo-256.ico",
+    "uninstallerIcon": "build/icon/logo-256.ico",
+    "deleteAppDataOnUninstall":true,
+    "artifactName": "Ice-Air-Setup-${arch}-${version}.${ext}",
+    "displayLanguageSelector": true,
+    "runAfterFinish": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true
+  },
+  "asarUnpack": [
+    "./node_modules/electron"
+  ],
+  "files": [
+    "dist/electron"
+  ],
+  "compression": "maximum"
+}

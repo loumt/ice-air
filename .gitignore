@@ -1,6 +1,13 @@
-# Folder
-.idea
-node_modules
-
-# File
+.DS_Store
+dist/electron/*
+dist/web/*
+!build/icons
+node_modules/
+npm-debug.log
+npm-debug.log.*
+thumbs.db
+!.gitkeep
 package-lock.json
+.idea
+log
+test/*

@@ -2,18 +2,14 @@
  * CreateBy loumt@sanlogic.com.
  */
 'use strict'
-const path = require('path');
-const {Menu, Tray, shell} = require('electron');
+import {Menu, Tray} from 'electron'
+import {version as appVersion} from './../../../package.json'
+import ConfigTool from '../tools/ConfigTool'
+import ImageTool from '../tools/ImageTool'
+import WindowConstant from './../constants/WindowConstant'
+import language from './../lang'
 
-const version = require('./../../../package.json').version
-const DialogTool = require('../tools/DialogTool')
-const ShellTool = require('../tools/ShellTool')
-const ImageTool = require('../tools/ImageTool')
-const WindowConstant = require('./../constants/WindowConstant')
-const WindowTool = require('../tools/WindowTool')
-
-
-class TrapClient {
+export default class TrapClient {
   constructor({app, mainWindow}) {
     this.app = app
     this.mainWindow = mainWindow
@@ -26,128 +22,109 @@ class TrapClient {
     this.flashingState.current = this.flashingState.YES
   }
 
-  getLabels() {
+  getLabels(lang) {
+
+    let AdapterProperties = language[lang] || language['zh-CN']
+    let {tray} = AdapterProperties.default
+    let {
+      version,
+      update,
+      fullscreen,
+      top,
+      setting,
+      about,
+      exit
+    } = tray
+
     return [
       {
-        label: `版本:${version}`,
-        // icon:ImageTool.getVersionIcon(),
+        label: `${version}:${appVersion}`,
         enabled: false
       },
-      {type: 'separator'},
-      {
-        label: '我在线上',
-        icon: ImageTool.getOnlineIcon(),
-        click:  () => {}
-      },
-      {
-        label: '离开',
-        icon: ImageTool.getOutlineIcon(),
-        click:  () => {}
-      },
-      {
-        label: '请勿打扰',
-        icon: ImageTool.getSilienceIcon(),
-        click:  () => {}
-      },
-      {
-        label: '离线',
-        icon: ImageTool.getOutlineIcon(),
-        click:  () => {}
-      },
-      {type: 'separator'},
+      // {type: 'separator'},
       // {
-      //   label: '百度',
-      //   icon: ImageTool.getHelpIcon(),
-      //   click: function () {
-      //     ShellTool.openExternalUrl('http://www.baidu.com')
-      //   }
+      //   label: '我在线上',
+      //   icon: ImageTool.getOnlineIcon(),
+      //   click:  () => {}
       // },
       // {
-      //   label: '文档',
-      //   icon: ImageTool.getAboutIcon(),
-      //   click: function () {
-      //     ShellTool.openExternalUrl('https://electronjs.org/docs')
-      //   }
+      //   label: '离开',
+      //   icon: ImageTool.getOutlineIcon(),
+      //   click:  () => {}
       // },
+      // {
+      //   label: '请勿打扰',
+      //   icon: ImageTool.getSilienceIcon(),
+      //   click:  () => {}
+      // },
+      // {
+      //   label: '离线',
+      //   icon: ImageTool.getOutlineIcon(),
+      //   click:  () => {}
+      // },
+      {type: 'separator'},
       {
-        label: '更新',
+        label: `${update}`,
         icon: ImageTool.getUpdateIcon(),
         click:  () => {
+          this.mainWindow.show()
           this.mainWindow.send('show-update')
         }
       },
+      // {
+      //   label: `${fullscreen}`,
+      //   icon: ImageTool.getFullScreenIcon(),
+      //   click:  () => {
+      //     this.mainWindow.setFullScreen(true)
+      //   }
+      // },
       {
-        label: '最大化',
-        icon: ImageTool.getFullScreenIcon(),
-        click:  () => {
-          this.mainWindow.setFullScreen(true)
-        }
-      },
-      {
-        label: '锁定',
-        icon: ImageTool.getLockIcon(),
+        label: `${top}`,
+        icon: this.getLockIcon(),
         click:  () => {
           this.mainWindow.recycleAlwaysOnTop()
-        }
-      },
-      {
-        label: '配置',
-        icon: ImageTool.getSettingIcon(),
-        click:  () => {
-          this.mainWindow.send('show-settings')
-        }
-      },
-      {
-        label: '关于',
-        icon: ImageTool.getAboutIcon(),
-        click: function () {
-          DialogTool.showMessage('作者信息', 'Sanlogic')
+          this.updateTray()
         }
       },
       {type: 'separator'},
       {
-        label: '立即退出',
+        label: `${exit}`,
         icon: ImageTool.getExitIcon(),
         click: () => {
+          this.mainWindow.show()
           this.mainWindow.close();
-          this.app.exit(0)
+          // this.app.exit(0)
         }
       }
     ]
   }
 
+  getLockIcon(){
+    let alwaysOnTop = this.mainWindow.getAlwaysOnTop()
+    if(alwaysOnTop){
+      return ImageTool.getLockIcon()
+    }else{
+      return ImageTool.getLockedIcon()
+    }
+  }
+
   createTray() {
     let image = ImageTool.getTrayIcon()
     image.setTemplateImage(true)
+    let language = ConfigTool.get(ConfigTool.KEY_CUSTOMER_APP_LANGUAGE) || 'zh-CN'
+
     this.tray = new Tray(image)
-    const contextMenu = Menu.buildFromTemplate(this.getLabels())
-    this.tray.setContextMenu(contextMenu)
+    this.contextMenu = Menu.buildFromTemplate(this.getLabels(language))
+    this.tray.setContextMenu(this.contextMenu)
 
     this.tray.setToolTip(WindowConstant.TRAY.TOOLTIP);
-    // this.initTrayEvent()
+    this.initTrayEvent()
   }
 
   initTrayEvent() {
     this.tray.on('click', () => {
-      if (this.messageState.current && this.mainWindow.isVisible()) {
-        this.showMessage()
-      } else {
-        this.mainWindow.isVisible() ? this.mainWindow.hide() : this.mainWindow.show()
-      }
-    })
-    this.tray.on('right-click', () => {
-      WindowTool.createWindow({
-        x: 0,
-        y: 0,
-        width: 200,
-        height: 100,
-        show: true,
-        frame: true,
-        resizable: false
-      })
-    })
-    this.tray.on('double-click', () => {
-      this.mainWindow.isVisible() ? this.mainWindow.hide() : this.mainWindow.show()
+      this.mainWindow.show()
+      // this.mainWindow.isVisible() ? this.mainWindow.hide() : this.mainWindow.show()
     })
   }
 
@@ -206,13 +183,23 @@ class TrapClient {
     return this.flashingState.current
   }
 
-  playAudio() {
-    // var audio = new Audio(__dirname + '/tray/app.wav');
-    // audio.play();
-    // setTimeout(function(){
-    //     console.log("暂停播放....");
-    //     audio.pause();// 暂停
-    // }, 800)
+  updateTray(language){
+    if(!language){
+      language = ConfigTool.get(ConfigTool.KEY_CUSTOMER_APP_LANGUAGE)
+    }
+    const contextMenu = Menu.buildFromTemplate(this.getLabels(language))
+    this.tray.setContextMenu(contextMenu)
+  }
+
+
+  /**
+   * 显示一个系统通知(系统托盘气泡)
+   * @param options
+   * @param options.title<String>
+   * @param options.content<String>
+   */
+  displayBalloon(options){
+    this.tray.displayBalloon(options)
   }
 
   destroy(){
@@ -221,5 +208,3 @@ class TrapClient {
     }
   }
 }
-
-module.exports = TrapClient;

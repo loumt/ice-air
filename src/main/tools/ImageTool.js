@@ -1,12 +1,11 @@
 "use strict";
 
-const  path = require('path')
-const {nativeImage} = require('electron')
-const assertsPath = process.env.NODE_ENV === 'development' ?
-    path.join(__dirname,'./../asserts') : path.join(__dirname,'/cast')
+import  path from 'path'
+import {nativeImage} from 'electron'
+const assertsPath =  path.join(__dirname,'/cast')
 
 
-class ImageTools{
+export default class ImageTools{
     constructor(){
     }
 
@@ -64,6 +63,14 @@ class ImageTools{
     return ImageTools.assert('lock-16.png')
   }
 
+  static getLockedIcon(){
+    return ImageTools.assert('o-lock-16.png')
+  }
+
+  static getUnLockIcon(){
+    return ImageTools.assert('u-lock-16.png')
+  }
+
 
   //state
     static getOnlineIcon(){
@@ -84,5 +91,3 @@ class ImageTools{
 
 
 }
-
-module.exports = ImageTools

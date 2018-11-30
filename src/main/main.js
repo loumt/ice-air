@@ -1,24 +1,41 @@
 'use strict'
-const {app, ipcMain, Menu} = require('electron')
-const MainWindow = require('./windows/MainWindow')
-const WindowConstant = require('./constants/WindowConstant')
-const Tray = require('./windows/Tray')
-const MenuTool = require('./tools/MenuTool')
-const ConfigTool = require('./tools/ConfigTool')
-const defaultConfig = require('./defaultConfig')
-const UpdateHandler = require('./update/UpdateHandler')
-const ipc = require('./ipc')
+import {app, ipcMain, Menu,session} from 'electron'
+import MainWindow from './windows/MainWindow'
+import WindowConstant from './constants/WindowConstant'
+import Tray from './windows/Tray'
+import MenuTool from './tools/MenuTool'
+import ConfigTool from'./tools/ConfigTool'
+import UpdateHandler from './update/UpdateHandler'
+import ipc from'./ipc'
+
+//单应用
+const gotTheLock = app.requestSingleInstanceLock()
 
 class AppWindow {
   constructor() {
     this.app = app
     this.ipcMain = ipcMain
+
+    //windows
     this.mainWindow = null
     this.tray = null
   }
 
   init() {
-    this.initApp()
+    if (gotTheLock) {
+      app.on('second-instance',(event,commandLine,workingDirectory)=>{
+        if(this.mainWindow){
+          if (this.mainWindow.isMinimized()){
+            this.mainWindow.restore()
+          }
+          this.mainWindow.showInactive()
+        }
+      })
+
+      this.initApp()
+    }else{
+      app.quit()
+    }
   }
 
   initApp() {
@@ -27,7 +44,6 @@ class AppWindow {
       this.initTray()
       this.initMenu()
       this.initConfig()
-      this.initTask()
       this.initIPC()
     });
 
@@ -51,6 +67,7 @@ class AppWindow {
     })
   };
 
+
   initIPC() {
     ipc.window(this)
     ipc.tray(this)
@@ -58,7 +75,28 @@ class AppWindow {
     ipc.clipboard(this)
     ipc.update(this)
     ipc.config(this)
-    ipc.mouse(this)
+    ipc.system(this)
+    ipc.localRdp(this)
+
+    ipcMain.on('minmize',(e,state)=>{
+      if(state){
+        this.mainWindow.getMainWindow().minimize()
+      }
+    })
+    ipcMain.on('maxmize',(e,state)=>{
+      if(state){
+        this.mainWindow.getMainWindow().maximize()
+      }else{
+        this.mainWindow.getMainWindow().unmaximize()
+      }
+    })
+    ipcMain.on('fullscreen',(e,state)=>{
+      this.mainWindow.getMainWindow().setFullScreen(state)
+    })
+
+    ipcMain.on('size',(e,options)=>{
+      this.mainWindow.getMainWindow().setSize(Number(options['width']),Number(options['height']))
+    })
   }
 
   initTray() {
@@ -67,6 +105,8 @@ class AppWindow {
 
   initMainWindow() {
     this.mainWindow = new MainWindow()
+    this.mainWindow.on('logout',data => {
+    })
   }
 
   initMenu() {
@@ -79,12 +119,8 @@ class AppWindow {
   }
 
   initConfig() {
-    ConfigTool.init(defaultConfig)
-  }
-
-  initTask() {
-    //Task1:自动更新
-    // this.update()
+    let configFile = ConfigTool.getConfigFile()
+    ConfigTool.init(configFile)
   }
 
   /**

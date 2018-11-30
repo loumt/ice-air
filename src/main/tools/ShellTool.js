@@ -1,8 +1,8 @@
 "use strict";
 
-const fs =require('fs')
-const os =require('os')
-const {shell} =require('electron')
+import fs from 'fs'
+import os from 'os'
+import {shell} from 'electron'
 
 /**
  * Open  External Url

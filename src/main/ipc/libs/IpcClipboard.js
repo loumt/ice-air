@@ -1,13 +1,13 @@
 "use strict"
 
-const IpcBase = require('./IpcBase')
-const {clipboard} = require('electron')
+import IpcBase from './IpcBase'
+import {clipboard} from 'electron'
 
 /**
  * Ipc > Clipboard  剪贴板
  * main中AppWindow对象
  */
-class IpcClipboard extends IpcBase{
+export default class IpcClipboard extends IpcBase{
   constructor() {
     super()
   }
@@ -28,5 +28,3 @@ class IpcClipboard extends IpcBase{
     return new IpcClipboard()
   }
 }
-
-module.exports = IpcClipboard;

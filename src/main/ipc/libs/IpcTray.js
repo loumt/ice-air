@@ -1,12 +1,12 @@
 "use strict"
 
-const IpcBase = require('./IpcBase')
+import IpcBase from './IpcBase'
 
 /**
  * Ipc > Tray 托盘相关
  * main中AppWindow对象
  */
-class IpcTray extends IpcBase{
+export default class IpcTray extends IpcBase{
   constructor(tray) {
     super({tray})
   }
@@ -29,10 +29,14 @@ class IpcTray extends IpcBase{
     }
   }
 
+  notification(){
+    return (e,options)=>{
+      this.tray.displayBalloon(options)
+    }
+  }
+
 
   static getInstance(tray) {
     return new IpcTray(tray)
   }
 }
-
-module.exports = IpcTray;

@@ -6,12 +6,16 @@
  * @param promise
  * @returns {Promise}
  */
-exports.to = (promise)=>{
-  return new Promise((resolve,reject)=>{
-    promise.then(res=>{
-      resolve([null,res])
-    }).catch(err=>{
-      resolve([err])
+export default class ExtendTool {
+  constructor(){}
+
+  static to(promise) {
+    return new Promise((resolve, reject) => {
+      promise.then(res => {
+        resolve([null, res])
+      }).catch(err => {
+        resolve([err])
+      })
     })
-  })
+  }
 }

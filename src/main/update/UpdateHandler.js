@@ -1,20 +1,19 @@
 'use strict';
-const axios = require('axios')
-const fs = require('fs')
-const del = require('del')
-const url = require('url')
-const path = require('path')
-const {EventEmitter} = require('events')
-const isDev = require('electron-is-dev');
-const FsUtils = require('./../utils/FsUtils')
-const ConfigTool = require('./../tools/ConfigTool')
-const _ = require('lodash');
-const {to} = require('./../tools/ExtendTool')
+import axios from 'axios'
+import fs from 'fs'
+import del from 'del'
+import url from 'url'
+import path from 'path'
+import {EventEmitter} from 'events'
+import FsUtils from './../utils/FsUtils'
+import ConfigTool from './../tools/ConfigTool'
+import ConfigConstant from'./../constants/ConfigConstant'
+import ExtendTool from './../tools/ExtendTool'
 
 const UPDATE_FILE_BASE_PATH = '/versions/version.json'
 
 //文件更新目录
-const UPDATE_TARGET = 'resources\\app\\dist\\build'
+const UPDATE_TARGET = 'resources\\app\\dist\\electron'
 
 //旧版本存储目录
 const OLD_VERSION_DIR = 'resources'
@@ -51,7 +50,7 @@ let target = path.join(path.dirname(require('electron').app.getPath('exe')), UPD
  * 4.update-file-end : 更新单个文件结束
  * 5.update-deny : 无需更新
  */
-class UpdateHandler extends EventEmitter {
+export default class UpdateHandler extends EventEmitter {
   constructor() {
     super();
     this.fileInSuccessUpdateNum = 0;
@@ -72,14 +71,14 @@ class UpdateHandler extends EventEmitter {
    * 获取当前设定的服务器地址
    */
   static getServerUrl() {
-    return url.format(ConfigTool.get(ConfigTool.KEY_SERVER))
+    return url.format(ConfigTool.get(ConfigConstant.KEY_SERVER))
   }
 
   /**
    * 获取当前版本(deprecation)
    */
   getCurrentVersion() {
-    return ConfigTool.get(ConfigTool.KEY_CURRENT_VERSION)
+    return ConfigTool.get(ConfigConstant.KEY_CURRENT_VERSION)
   }
 
   /**
@@ -94,7 +93,7 @@ class UpdateHandler extends EventEmitter {
    * 获取服务最新版本号
    */
   async getRemoteVersion() {
-    let [err, result] = await to(this.getRemoteVersionJson())
+    let [err, result] = await ExtendTool.to(this.getRemoteVersionJson())
     if (err) {
       this.emit('update-error', '获取服务器版本信息失败')
     }
@@ -118,18 +117,25 @@ class UpdateHandler extends EventEmitter {
   static getVersionInfo() {
     return new Promise((resolve, reject) => {
       let server_url = UpdateHandler.getServerUrl()
+      let result = {};
+
       axios({
         method: 'get',
         url: server_url + UPDATE_FILE_BASE_PATH,
-        responseType: 'json'
+        responseType: 'json',
+        timeout: 3000
       }).then(res => {
-        let result = {};
         result['lastestVersionInfo'] = res.data[res.data['current-version']];
         result['lastestVersion'] = res.data['current-version'];
-        result['isUpdate'] = true
+
+        let currentVersion = ConfigTool.get(ConfigConstant.KEY_CURRENT_VERSION)
+        result['currentVersion'] = currentVersion
+
+        result['isUpdate'] = currentVersion !== result['lastestVersion']
         resolve(result)
       }).catch(e => {
-        reject(e)
+        result['error'] = {code: 500}
+        reject(result)
       });
     });
   }
@@ -141,8 +147,8 @@ class UpdateHandler extends EventEmitter {
     this.emit('update-start')
 
     //判断更新环境，暂且只支持客户端整合环境
-    if (isDev) {
-      return this.emit('update-error', 'DEV NOT SUPPORT UPDATE!')
+    if (process.env.NODE_ENV === 'development') {
+      return this.emit('update-error', '当前环境为开发模式!')
     }
 
     //获取服务器地址
@@ -150,7 +156,7 @@ class UpdateHandler extends EventEmitter {
       let serverOptions = ConfigTool.get(ConfigTool.KEY_SERVER);
       this.server = url.format(serverOptions)
     } catch (e) {
-      return this.emit('update-error', '服务地址获取失败')
+      return this.emit('update-error', '服务地址获取失败!')
     }
 
     //比对远程服务器版本与客户端版本
@@ -309,7 +315,7 @@ class UpdateHandler extends EventEmitter {
       this.updateVersionSettings()
       this.emit('update-success')
     }
-    return percent + '%'
+    return percent
   }
 
 
@@ -399,6 +405,4 @@ class UpdateHandler extends EventEmitter {
     this.emit('update-error')
   }
 }
-
-module.exports = UpdateHandler;
 

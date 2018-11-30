@@ -1,10 +1,10 @@
-const {app,dialog} = require('electron')
-const ImageTool = require('./ImageTool')
+import {app,dialog} from 'electron'
+import ImageTool from './ImageTool'
 
 /**
  * 弹框
  */
-class DialogTool {
+export default class DialogTool {
     constructor() {
     }
 
@@ -51,5 +51,3 @@ class DialogTool {
         dialog.showErrorBox(title, content);
     }
 }
-
-module.exports = DialogTool

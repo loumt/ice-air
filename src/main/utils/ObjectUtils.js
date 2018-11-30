@@ -1,10 +1,10 @@
 "use strict";
-const _ = require('lodash')
+import _ from 'lodash'
 
 /**
  * 对象工具
  */
-class ObjectUtils {
+export default class ObjectUtils {
   constructor() {
   }
 
@@ -57,9 +57,27 @@ class ObjectUtils {
   static isFunction(fn) {
     return Object.prototype.toString.call(fn) == '[object Function]'
   }
+
+
+  /**
+   * 是否为Number类型
+   * @param value
+   * @returns {boolean}
+   */
+  static isNumber(value) {
+    return (typeof(value) === 'number');
+  }
+
+  /**
+   * 是否为Undefined
+   * @param value
+   * @returns {boolean}
+   */
+  static isUndefined(value) {
+    return (typeof(value) === 'undefined');
+  }
 }
 
-module.exports = ObjectUtils
 
 // let config = {
 //   //cloudapp 服务

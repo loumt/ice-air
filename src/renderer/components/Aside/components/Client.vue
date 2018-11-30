@@ -33,6 +33,9 @@
         <el-row>
             <el-button type="text" icon="el-icon-success" @click="toUpdate">更新页面</el-button>
         </el-row>
+        <el-row>
+            <el-button type="text" icon="el-icon-success" @click="toFile">文件测试</el-button>
+        </el-row>
     </div>
 </template>
 
@@ -74,6 +77,9 @@
       },
       toUpdate() {
         this.$router.push('/home/client/update')
+      },
+      toFile() {
+        this.$router.push('/home/client/file')
       }
     }
   }

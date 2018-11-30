@@ -29,6 +29,7 @@
         data() {
             return {
                 phone: '',
+                username: '',
                 password: '',
                 loading: false,
                 dialogVisible: false

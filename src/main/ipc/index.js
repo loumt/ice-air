@@ -1,13 +1,14 @@
 "use strict";
-const assert = require('assert')
-const IpcConstants = require('./IpcConstants')
-const IpcClipboard = require('./libs/IpcClipboard')
-const IpcWindow = require('./libs/IpcWindow')
-const IpcTray = require('./libs/IpcTray')
-const IpcOthers = require('./libs/IpcOthers')
-const IpcMouse = require('./libs/IpcMouse')
-const IpcUpdate = require('./libs/IpcUpdate')
-const IpcConfig = require('./libs/IpcConfig')
+import assert from 'assert'
+import IpcConstants from './IpcConstants'
+import IpcClipboard from './libs/IpcClipboard'
+import IpcWindow from './libs/IpcWindow'
+import IpcTray from './libs/IpcTray'
+import IpcOthers from './libs/IpcOthers'
+import IpcUpdate from './libs/IpcUpdate'
+import IpcConfig from './libs/IpcConfig'
+import IpcSystem from './libs/IpcSystem'
+import IpcLocalRDP from './libs/IpcLocalRDP'
 
 /**
  * ipc消息注册
@@ -26,7 +27,7 @@ function inject(ipcMain,ipcHandler,[Name,Method]){
   ipcMain.on(Name, ipcHandler[Method]())
 }
 
-module.exports = {
+export default {
   //ipc-剪贴板
   'clipboard': ({ipcMain}) => {
     let ipcHandler = IpcClipboard.getInstance()
@@ -53,22 +54,28 @@ module.exports = {
       inject(ipcMain,ipcHandler,IpcConstants.Instruction.Tray[operation])
     }
   },
-  'mouse':({ipcMain})=>{
-    let ipcHandler = IpcMouse.getInstance()
-    for(let operation in IpcConstants.Instruction.Mouse){
-      inject(ipcMain,ipcHandler,IpcConstants.Instruction.Mouse[operation])
-    }
-  },
   'update':({ipcMain,mainWindow})=>{
     let ipcHandler = IpcUpdate.getInstance(mainWindow)
     for(let operation in IpcConstants.Instruction.Update){
       inject(ipcMain,ipcHandler,IpcConstants.Instruction.Update[operation])
     }
   },
-  'config':({ipcMain,mainWindow})=>{
-    let ipcHandler = IpcConfig.getInstance(mainWindow)
+  'config':({ipcMain,mainWindow,tray})=>{
+    let ipcHandler = IpcConfig.getInstance(mainWindow,tray)
     for(let operation in IpcConstants.Instruction.Config){
       inject(ipcMain,ipcHandler,IpcConstants.Instruction.Config[operation])
+    }
+  },
+  'system': ({ipcMain,mainWindow,app})=>{
+    let ipcHandler = IpcSystem.getInstance(app,mainWindow)
+    for(let operation in IpcConstants.Instruction.System){
+      inject(ipcMain,ipcHandler,IpcConstants.Instruction.System[operation])
+    }
+  },
+  'localRdp':({ipcMain,mainWindow})=>{
+    let ipcHandler = IpcLocalRDP.getInstance(mainWindow)
+    for(let operation in IpcConstants.Instruction.LocalRdp){
+      inject(ipcMain,ipcHandler,IpcConstants.Instruction.LocalRdp[operation])
     }
   }
 }

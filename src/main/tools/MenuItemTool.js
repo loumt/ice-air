@@ -1,13 +1,10 @@
-
 "use strict";
-
-
-const {MenuItem, Menu, app, shell, dialog} = require('electron')
+import {MenuItem, Menu, app, shell, dialog} from 'electron'
 
 /**
  * WindowBrowser菜单栏
  */
-class MenuItemTool{
+export default class MenuItemTool{
     constructor(){
         this.types = arguments
     }
@@ -47,5 +44,3 @@ MenuItemTool.Type = {
     TEST:'getTestMenuItem',
     ELECTRON:'getElectronMenuItem'
 }
-
-module.exports = MenuItemTool

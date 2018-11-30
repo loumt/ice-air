@@ -1,14 +1,14 @@
 "use strict";
 
-const fs= require('fs')
-const path = require('path')
-const util = require('util')
+import fs from 'fs'
+import path from 'path'
+import util from 'util'
 
 
 /**
  * 文件工具类
  */
-class FsUtils {
+export default class FsUtils {
 
   /**
    * 是否存在
@@ -277,4 +277,3 @@ class FsUtils {
 
 }
 
-module.exports = FsUtils

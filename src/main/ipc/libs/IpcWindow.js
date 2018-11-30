@@ -1,11 +1,11 @@
 "use strict"
 
-const IpcBase = require('./IpcBase')
+import IpcBase from './IpcBase'
 /**
  * Ipc > Clipboard  窗口
  * main中AppWindow对象
  */
-class IpcWindow extends IpcBase{
+export default class IpcWindow extends IpcBase{
   constructor(mainWindow) {
     super({mainWindow})
   }
@@ -19,7 +19,14 @@ class IpcWindow extends IpcBase{
         case 'max-min':
           this.mainWindow.maxOrNot()
           break
+        case 'max':
+          this.mainWindow.max()
+          break;
+        case 'min':
+          this.mainWindow.min()
+          break;
         case 'close':
+          console.log('close')
           this.mainWindow.close()
           break
         default:
@@ -46,6 +53,12 @@ class IpcWindow extends IpcBase{
     }
   }
 
+  reload(){
+    return ()=>{
+      this.mainWindow.reload()
+    }
+  }
+
   getLoginState(){
     return (e)=>{
       e.returnValue = this.mainWindow.getLoginState()
@@ -54,7 +67,7 @@ class IpcWindow extends IpcBase{
 
   login(){
     return  (e, state) => {
-      this.mainWindow.updateLoginState(state || true)
+      this.mainWindow.updateLoginState(state)
     }
   }
 
@@ -62,5 +75,3 @@ class IpcWindow extends IpcBase{
     return new IpcWindow(mainWindow)
   }
 }
-
-module.exports = IpcWindow;

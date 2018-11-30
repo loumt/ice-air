@@ -1,15 +1,27 @@
 "use strict"
 
-const IpcBase = require('./IpcBase')
-const UpdateHandler = require('./../../update/UpdateHandler')
+import IpcBase from './IpcBase'
+import UpdateHandler from './../../update/UpdateHandler'
+import ExtendTool from './../../tools/ExtendTool'
 
 /**
  * Ipc > Update 更新相关
  * main中AppWindow对象
  */
-class IpcUpdate extends IpcBase{
+export default class IpcUpdate extends IpcBase{
   constructor(mainWindow) {
     super({mainWindow})
+  }
+
+
+  getVersionInfo() {
+    return async (e)=>{
+      let [error, result] = await ExtendTool.to(UpdateHandler.getVersionInfo());
+      if (error) {
+        return e.returnValue = {error: error}
+      }
+      e.returnValue = {versionInfo: result}
+    }
   }
 
   update(){
@@ -17,15 +29,12 @@ class IpcUpdate extends IpcBase{
       let updater = new UpdateHandler()
       updater.on('update-deny', () => {
         this.mainWindow.send('update-deny')
-      })
-      updater.on('update-file-end', () => {
+      }).on('update-file-end', () => {
         this.mainWindow.send('update-progress', updater.getUpdatePercent())
-      })
-      updater.on('update-success', () => {
+      }).on('update-success', () => {
         this.mainWindow.send('update-success')
-      })
-      updater.on('update-error', () => {
-        this.mainWindow.send('update-error')
+      }).on('update-error', (args) => {
+        this.mainWindow.send('update-error',args)
       })
       updater.update();
     }
@@ -43,5 +52,3 @@ class IpcUpdate extends IpcBase{
     return new IpcUpdate(mainWindow)
   }
 }
-
-module.exports = IpcUpdate;

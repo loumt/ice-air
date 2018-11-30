@@ -1,19 +1,16 @@
 "use strict"
 
-const IpcBase = require('./IpcBase')
-const {BrowserWindow} = require('electron')
-const ConnectionPool = require('./../../connections/ConnectionPool')
-const SanlogicRDP = require('./../../connections/SanlogicRDP')
-const MenuItemTool = require('./../../tools/MenuItemTool')
-const {to} = require('./../../tools/ExtendTool')
-const UpdateHandler = require('./../../update/UpdateHandler')
-const pck = require('./../../../../package.json')
+import IpcBase from './IpcBase'
+import {BrowserWindow} from 'electron'
+import ConnectionPool from './../../connections/ConnectionPool'
+import MenuItemTool from './../../tools/MenuItemTool'
+import pck from './../../../../package.json'
 
 /**
  * Ipc > Other 其他
  * main中AppWindow对象
  */
-class IpcOthers extends IpcBase {
+export default class IpcOthers extends IpcBase {
   constructor(mainWindow) {
     super({mainWindow})
   }
@@ -31,28 +28,6 @@ class IpcOthers extends IpcBase {
   }
 
 
-  openLocalRDP() {
-    return (e, args) => {
-      console.log(args)
-      let config = args
-      let connectionId = args['token']
-
-
-      let connection = new SanlogicRDP(config, connectionId)
-
-      //不管连接成功与否,该进程都会先生成.
-      //置入池中,用于控制客户端的关闭限制
-      ConnectionPool.new(connectionId, connection)
-
-      connection.on('close', () => {
-        this.mainWindow.send('connection-close', connectionId)
-        ConnectionPool.del(connectionId)
-      })
-      connection.init();
-    }
-  }
-
-
   rightClickMenu() {
     return () => {
       let menu = new MenuItemTool(MenuItemTool.Type.ELECTRON).fork()
@@ -62,17 +37,8 @@ class IpcOthers extends IpcBase {
 
   getClientVersion() {
     return (e) => {
-      this.mainWindow.send('send-client-version', pck.version)
-    }
-  }
-
-  getVersionInfo() {
-    return async () => {
-      let [error, result] = await to(UpdateHandler.getVersionInfo());
-      if (error) {
-        return e.returnValue = {error: error}
-      }
-      e.returnValue = {versionInfo: result}
+      e.returnValue = pck.version
+      // this.mainWindow.send('send-client-version', pck.version)
     }
   }
 
@@ -80,5 +46,3 @@ class IpcOthers extends IpcBase {
     return new IpcOthers(mainWindow)
   }
 }
-
-module.exports = IpcOthers;

@@ -123,6 +123,11 @@ export default new Router({
               name: 'update',
               path: 'update',
               component: Update
+            },
+            {
+              name: 'file',
+              path: 'file',
+              component: require('@/components/Main/Client/components/File.vue').default
             }
           ]
         },

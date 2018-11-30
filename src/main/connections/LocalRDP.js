@@ -1,7 +1,7 @@
-const RDP = require('node-rdp');
-const {EventEmitter} = require('events');
+import RDP from 'node-rdp'
+import {EventEmitter} from 'events'
 
-class LocalRDP extends EventEmitter {
+export default class LocalRDP extends EventEmitter {
     constructor(params) {
         super();
         this.params = params;
@@ -37,5 +37,3 @@ class LocalRDP extends EventEmitter {
         connection.init()
     }
 }
-
-module.exports = LocalRDP;

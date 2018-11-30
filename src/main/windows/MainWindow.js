@@ -1,53 +1,68 @@
 "use strict"
-const electron = require('electron')
-const env = require('./../env')
-const electronLocalShortcut = require('electron-localshortcut')
-const {dialog, BrowserWindow} = electron
-const WindowConstant = require('./../constants/WindowConstant')
-const ImageTool = require('../tools/ImageTool')
-const DialogTool = require('../tools/DialogTool')
-const ConfigTool = require('../tools/ConfigTool')
-const ConnectionPool = require('./../connections/ConnectionPool')
+import electron, {BrowserWindow, dialog} from 'electron'
+import path from 'path'
+import url from 'url'
+import electronLocalShortcut from 'electron-localshortcut'
+import WindowConstant from './../constants/WindowConstant'
+import ImageTool from '../tools/ImageTool'
+import DialogTool from '../tools/DialogTool'
+import ConnectionPool from './../connections/ConnectionPool'
+import {EventEmitter} from 'events'
 
-const PublicEnv = {
-  devTool:env.DEV_TOOL,
+const _globalConfig = {
   isDev: process.env.NODE_ENV === 'development',
-  url: process.env.NODE_ENV === 'development'? 'http://localhost:9080' : `file://${__dirname}/app.html`
+  devTool: process.env.DEV_TOOL,
+  webUrl: process.env.WEB_URL ? process.env.WEB_URL : url.format({
+    protocol: 'file',
+    slashes: true,
+    pathname: path.join(__dirname, 'desk.html')
+  })
 }
+// console.dir(_globalConfig)
 
-console.log(`isDev:${PublicEnv.isDev} url:${PublicEnv.url}`);
-console.log('This platform : ' + process.platform);
-
-class MainWindow {
+export default class MainWindow extends EventEmitter {
 
   constructor() {
-    this.createMainWindow()
-    this.initWindowContent()
-    this.initWindowEvent()
-    this.initWindowShortCut()
-    this.initThumbnail()
+    super()
+    this.windowOptions = {width: 0, height: 0}
 
     //登录状态
     this.loginState = {YES: true, NO: false}
     this.loginState.current = this.loginState.NO
 
+    //登录之后是否最大化
+    this.maxState = {YES: true, NO: false}
+    this.maxState.current = this.maxState.NO
+
     //闪烁状态
     this.frashCurrentState = false
+
+    this.createMainWindow()
+    this.initWindowContent()
+    this.initWindowEvent()
+    this.initWindowShortCut()
+    this.initThumbnail()
   }
 
   createMainWindow() {
-    let {width, height} = electron.screen.getPrimaryDisplay().workAreaSize
+    let {workAreaSize} = electron.screen.getPrimaryDisplay()
+    let {width, height} = workAreaSize
+
+    Object.assign(this.windowOptions, workAreaSize)
+
     this.mainWindow = new BrowserWindow({
       title: WindowConstant.WINDOW_CONFIG.TITLE,
       width: width * 0.8,
       height: height * 0.8,
-      minHeight: height * 0.5,
-      minWidth: width * 0.5,
-      resizable: true,
+      minHeight: WindowConstant.WINDOW_CONFIG.MIN_HEIGHT,
+      minWidth: WindowConstant.WINDOW_CONFIG.MIN_WIDTH,
+      resizable: false,
       fullscreen: false,
+      maximizable: true,
+      minimizable: false,
       center: true,
       show: false,
-      movable: true,
+      movable: false,
       alwaysOnTop: false,
       darkTheme: true,
       skipTaskbar: false,
@@ -64,7 +79,8 @@ class MainWindow {
         javascript: true,
         plugins: true,
         nodeIntegration: true,
-        webSecurity: false
+        webSecurity: false,
+        preload: path.join(__dirname, './preload.js')
       }
     })
   }
@@ -75,10 +91,15 @@ class MainWindow {
     })
     this.mainWindow.on('close', (e) => {
       e.preventDefault()
+      //web exit dialog
       this.exitDialog()
     })
     this.mainWindow.on('resize', (e) => {
       // this.mainWindow.reload()
+    })
+
+    this.mainWindow.on('app-command', (e, cmd) => {
+      console.log(cmd)
     })
   }
 
@@ -103,17 +124,16 @@ class MainWindow {
     return this.mainWindow.isVisible()
   }
 
-  min() {
-    this.mainWindow.minimize()
+  reload() {
+    this.mainWindow.reload()
   }
 
   setFullScreen(fullScreen) {
-    ConfigTool.save(ConfigTool.KEY_CUSTOMER_WINDOW_FULLSCREEN, fullScreen)
     this.mainWindow.setFullScreen(fullScreen)
   }
 
   getFullScreen() {
-    return this.mainWindow.getFullScreen()
+    return this.mainWindow.isFullScreen()
   }
 
   maxOrNot() {
@@ -124,39 +144,61 @@ class MainWindow {
     }
   }
 
-  isMinimized() {
-    return this.mainWindow.isMaximized()
+  destroy() {
+    this.mainWindow.destroy()
+  }
+
+  min() {
+    this.mainWindow.minimize()
   }
 
   restore() {
     this.mainWindow.restore()
   }
 
-  load() {
-    this.mainWindow.loadURL(PublicEnv.url)
+  render() {
+    this.mainWindow.loadURL(_globalConfig.webUrl)
   }
 
   initWindowContent() {
-    if (PublicEnv.isDev || PublicEnv.devTool){
+    this.render()
+    if (process.env.DEV_TOOL) {
       this.openDevTools()
     }
-
-    this.load()
     this.initWebContentEvent()
   }
 
   initWindowShortCut() {
     electronLocalShortcut.register(this.mainWindow, 'Esc', () => {
+      let isFullScreen = this.mainWindow.isFullScreen()
+      this.send('esc', {currentWindowState: {fullScreen: isFullScreen, loginState: this.loginState.current}})
       if (this.mainWindow.isFullScreen()) {
-        this.setFullScreen(!this.mainWindow.isFullScreen())
+        // this.setFullScreen(!this.mainWindow.isFullScreen())
       } else {
-        this.mainWindow.close()
+        // this.mainWindow.close()
       }
     })
 
     electronLocalShortcut.register(this.mainWindow, 'F11', () => {
+      this.mainWindow.setResizable(true)
       this.setFullScreen(!this.mainWindow.isFullScreen())
+      this.mainWindow.setResizable(false)
     })
+  }
+
+  updateLoginState(state) {
+    this.loginState.current = state
+    this.mainWindow.setResizable(true)
+    //1.登录之后无最大化,小窗与全屏间的切换
+    if (state) {
+      this.mainWindow.maximize()
+    } else {
+      if (this.mainWindow.isFullScreen()) {
+        this.mainWindow.setFullScreen(false)
+      }
+      this.mainWindow.unmaximize()
+    }
+    this.mainWindow.setResizable(false)
   }
 
   initWebContentEvent() {
@@ -194,7 +236,6 @@ class MainWindow {
   exitDialog() {
     if (ConnectionPool.isHasActive()) {
       this.send('connections-active')
-      DialogTool.errorDialog('Warning', 'Connection Active ...')
     } else {
       DialogTool.quitConfirm()
     }
@@ -204,23 +245,24 @@ class MainWindow {
     this.mainWindow.setAlwaysOnTop(flag || !this.mainWindow.isAlwaysOnTop())
   }
 
-  send(opcode, data) {
-    this.mainWindow.webContents.send(opcode, data)
+  getAlwaysOnTop() {
+    return this.mainWindow.isAlwaysOnTop()
   }
 
-  updateLoginState(state) {
-    this.loginState.current = state
+  send(opcode, data) {
+    this.mainWindow.webContents.send(opcode, data)
   }
 
   getLoginState() {
     return this.loginState.current
   }
 
-  flashFrame(){
+  flashFrame() {
     this.frashCurrentState = !this.frashCurrentState
     this.mainWindow.flashFrame(!this.frashCurrentState)
   }
+
+  getMainWindow() {
+    return this.mainWindow
+  }
 }
-
-
-module.exports = MainWindow;

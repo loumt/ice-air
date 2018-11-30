@@ -1,6 +1,6 @@
-const SanlogicRDP = require('./SanlogicRDP')
+import SanlogicRDP from './SanlogicRDP'
 
-module.exports = {
+export default {
     pool:{},
 
     new(connectionId,rdpConnection){

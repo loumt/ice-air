@@ -1,4 +1,4 @@
-class IpcBase{
+export default class IpcBase{
   constructor(main = {}){
     this.main = main
     this.app = main.app
@@ -7,4 +7,3 @@ class IpcBase{
     this.ipcMain = main.ipcMain
   }
 }
-module.exports = IpcBase
